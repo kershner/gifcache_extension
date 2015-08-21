@@ -15,6 +15,10 @@ function getImg(url) {
 		}
 		chrome.storage.local.set(data, function() {
 			console.log('URL sent to staging area!');
-		});		
+		});
+		if(data['urls']) {
+			var total = data['urls'].length;
+			chrome.browserAction.setBadgeText({text: total.toString()});
+		}
 	});
 }
