@@ -96,6 +96,9 @@ function gifCounter() {
 		var html = '<div class="staged-gifs-number"><div class="number"></div><div class="blurb">Staged GIFs</div></div>';
 		$('body').prepend(html);
 		$('.number').text(numContainers).css('color', COLORS[randomnumber]);
+		chrome.browserAction.setBadgeText({text: numContainers.toString()});
+	} else {
+		chrome.browserAction.setBadgeText({text: ''});
 	}
 }
 
