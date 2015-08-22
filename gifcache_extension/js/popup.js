@@ -5,13 +5,17 @@ $(document).ready(function() {
 // Global colors to be used by various functions
 var COLORS = ['#498FBD', '#ff6767', '#FFA533', '#585ec7', '#FF8359'];
 
-// Grabs cookie set by GifCache server - checks if user is logged in or not
-function getCookie() {
+// Checks if user is logged in or not, grabs cookies set by GifCache server
+function getCookie() {	
 	chrome.cookies.get({url: 'http://www.gifcache.com', name: 'logged_in'}, function(cookie) {		
 		showInitialScreen(cookie);
 		if (cookie === null) {
 			// Nothing
-		} else {
+		} else {			
+			chrome.cookies.get({url: 'http://www.gifcache.com', name: 'avatar'}, function(cookie) {
+				addAvatar(cookie);
+				return false;
+			});
 			chrome.cookies.get({url: 'http://www.gifcache.com', name: 'username'}, function(cookie) {
 				addUsernameLink(cookie);
 				return false;
@@ -25,7 +29,7 @@ function getCookie() {
 function showInitialScreen(loggedIn) {
 	navLogo();
 	if (loggedIn === null) {
-		$('.gifcache-container').remove();
+		$('.gifcache-container, .profile-info').remove();
 		var html = '<a id="login-btn" href="http://www.gifcache.com/login"><div class="btn red-btn">Please Log In</div></a>';
 		$('body').append(html);
 		$('#login-btn').on('click', function() {
@@ -33,6 +37,7 @@ function showInitialScreen(loggedIn) {
 			return false;
 		});
 	} else {
+		$('body').prepend('<a class="profile-info animate"></a>');
 		$('.nav-logo-not-logged-in').removeClass('nav-logo-not-logged-in').addClass('nav-logo');
 		checkStorage();
 	}	
@@ -50,11 +55,53 @@ function navLogo() {
 	}, 50);
 }
 
-// Adds link to username profile
+// Returns formatted URL for display and the HTML element required to play it
+function formatUrl(url) {
+	var url = url.replace(/['"]+/g, '');
+	var lastPeriod = url.lastIndexOf('.');
+	var extension = url.slice(lastPeriod + 1, url.length);
+	var formattedUrl = '';
+	var element = '';
+	if (extension === 'gif') {
+		formattedUrl = url;
+		element = 'img';
+	} else if (extension === 'gifv') {
+		formattedUrl = url.substr(0, lastPeriod) + '.mp4';
+		element = 'video';
+	} else if (extension === 'mp4' || extension === 'webm') {
+		formattedUrl = url;
+		element = 'video';
+	} else if (url.indexOf('gfycat') > -1) {
+		var lastForwardSlash = url.lastIndexOf('/');
+		var gfyname = url.slice(lastForwardSlash + 1, url.length);
+		formattedUrl = 'http://giant.gfycat.com/' + gfyname + '.mp4';
+		element = 'video';
+	} else {
+		formattedUrl = 'error';
+	}
+	return [formattedUrl, element];
+}
+
+function addAvatar(avatar) {
+	var results = formatUrl(avatar.value);
+	var url = results[0];
+	var type = results[1];
+	if (type === 'img') {
+		var avatar = '<div class="avatar-wrapper"><img src=' + url + '></div>';
+	} else if (type === 'video')  {
+		var avatar = '<div class="avatar-wrapper"><video src="' + url + '" autoplay loop poster="http://www.gifcache.com/static/img/preload.gif"></video></div>';
+	} else if (type === 'error') {
+		var avatar = '<div class="avatar-wrapper"><img src="http://www.gifcache.com/static/img/default-user-image.png"></div>';
+	}	
+	$('.profile-info').prepend(avatar);
+}
+
+// Adds link to user profile
 function addUsernameLink(username) {
-	var username = '<a class="username animate" href="http://www.gifcache.com/u/' + username.value + '">' + username.value + '</a>';
-	$('body').prepend(username);
-	$('.username').on('click', function() {
+	$('.profile-info').attr('href', 'http://www.gifcache.com/u/' + username.value);
+	var username = '<div class="username animate">' + username.value + '</div>';
+	$('.profile-info').prepend(username);
+	$('.profile-info').on('click', function() {
 		chrome.tabs.create({url: $(this).attr('href')});
 		return false;
 	});
@@ -66,7 +113,7 @@ function checkStorage() {
 		$('.submit-btn, .gifcache-container').remove();
 		if (!data['urls'] || data['urls'].length < 1) {
 			$('body').append('<div class="staging-empty">The staging area is currently empty.</div>');
-			gifCounter();
+			addControls();
 		} else {
 			$('.staging-empty').remove();
 			$('body').append('<div class="gifcache-container"></div>');
@@ -76,7 +123,7 @@ function checkStorage() {
 			}			
 			var submitBtn = '<div class="btn blue-btn submit-btn">Add to Cache!</div>';
 			$('body').append(submitBtn);
-			gifCounter();
+			addControls();
 			animateContainers();
 			colorGifContainers();
 			removeElements();
@@ -88,14 +135,12 @@ function checkStorage() {
 }
 
 // Adds counter for number of staged GIFs
-function gifCounter() {
-	$('.staged-gifs-number').remove();
-	var randomnumber = (Math.random() * (COLORS.length - 0 + 1) ) << 0;
+function addControls() {
+	$('.controls').remove();
 	var numContainers = $('.staged-container').length;
 	if (numContainers) {
-		var html = '<div class="staged-gifs-number"><div class="number"></div><div class="blurb">Staged GIFs</div></div>';
+		var html = '<div class="controls btn blue-btn">Bulk</div>';
 		$('body').prepend(html);
-		$('.number').text(numContainers).css('color', COLORS[randomnumber]);
 		chrome.browserAction.setBadgeText({text: numContainers.toString()});
 	} else {
 		chrome.browserAction.setBadgeText({text: ''});
@@ -119,16 +164,14 @@ function animateContainers() {
 
 // Creates the individual HTML elements for staged GIFs
 function createElement(url) {
-	var lastPeriod = url.lastIndexOf('.');
-	var extension = url.slice(lastPeriod + 1, url.length);
-	if (extension === 'gif') {
-		var element = '<img src="' + url + '">';
-	} else if (extension === 'gifv') {
-		newUrl = url.substring(0, lastPeriod) + '.mp4';
+	var results = formatUrl(url);
+	var newUrl = results[0];
+	var type = results[1];
+	if (type === 'img') {
+		var element = '<img src=' + newUrl + '>';
+	} else if (type === 'video')  {
 		var element = '<video src="' + newUrl + '" autoplay loop poster="http://www.gifcache.com/static/img/preload.gif"></video>';
-	} else if (extension === 'webm' || extension === 'mp4') {
-		var element = '<video src="' + url + '" autoplay loop poster="http://www.gifcache.com/static/img/preload.gif"></video>';	
-	} else {
+	} else if (type === 'error') {
 		var element = '<div class="not-a-gif">Not a GIF file!</div>';
 	}
 	var html = 	'<div class="staged-container staged-container-small animate">' +
