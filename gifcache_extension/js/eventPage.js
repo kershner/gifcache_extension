@@ -11,17 +11,22 @@ chrome.contextMenus.create({
 
 function getImg(url) {
 	chrome.storage.local.get(function(data) {
-		if (typeof(data['urls']) !== 'undefined' && data['urls'] instanceof Array) {
-			data['urls'].push(url);
+		var gifObject = {
+			'url': url,
+			'label': '',
+			'tags': ''
+		}
+		if (typeof(data['stagedGifs']) !== 'undefined' && data['stagedGifs'] instanceof Array) {			
+			data['stagedGifs'].push(gifObject);
 		} else {
-			data['urls'] = [url];
+			data['stagedGifs'] = [gifObject];
 		}
 		chrome.storage.local.set(data, function() {
-			console.log('URL sent to staging area!');
+			console.log('Gif sent to staging area!');
 		});
-		if(data['urls']) {
+		if(data['stagedGifs']) {
 			var randomnumber = (Math.random() * (COLORS.length - 0 + 1) ) << 0;
-			var total = data['urls'].length;
+			var total = data['stagedGifs'].length;
 			chrome.browserAction.setBadgeBackgroundColor({color: COLORS[randomnumber]});
 			chrome.browserAction.setBadgeText({text: total.toString()});
 		}

@@ -1,9 +1,15 @@
 $(document).ready(function() {	
-	getCookie();	
+	getCookie();
 });
 
 // Global colors to be used by various functions
-var COLORS = ['#498FBD', '#ff6767', '#FFA533', '#585ec7', '#FF8359'];
+var COLORS = ['#25B972', '#498FBD', '#ff6767', '#FFA533', '#585ec7', '#FF8359'];
+function getColorScheme() {		
+	var randomnumber = (Math.random() * (COLORS.length) ) << 0;
+	var mainColor = COLORS[randomnumber];
+	COLORS.splice(COLORS.indexOf(mainColor), 1);	
+	return mainColor;
+}
 
 // Checks if user is logged in or not, grabs cookies set by GifCache server
 function getCookie() {	
@@ -28,10 +34,12 @@ function getCookie() {
 // Determines which initial screen to show based on cookie
 function showInitialScreen(loggedIn) {
 	navLogo();
+	var color = getColorScheme();
+	$('body').css({'background-color': color});
 	if (loggedIn === null) {
 		$('.gifcache-container, .profile-info').remove();
 		var html = '<a id="login-btn" href="http://www.gifcache.com/login"><div class="btn red-btn">Please Log In</div></a>';
-		$('body').append(html);
+		$('body').append(html);		
 		$('#login-btn').on('click', function() {
 			chrome.tabs.create({url: $(this).attr('href')});
 			return false;
@@ -78,6 +86,7 @@ function formatUrl(url) {
 		element = 'video';
 	} else {
 		formattedUrl = 'error';
+		element = 'error';
 	}
 	return [formattedUrl, element];
 }
@@ -109,20 +118,26 @@ function addUsernameLink(username) {
 
 // Checks Chrome local storage, displays results or 'empty' message
 function checkStorage() {	
-	chrome.storage.local.get('urls', function(data) {
+	chrome.storage.local.get('stagedGifs', function(data) {
 		$('.submit-btn, .gifcache-container').remove();
-		if (!data['urls'] || data['urls'].length < 1) {
+		if (!data['stagedGifs'] || data['stagedGifs'].length < 1) {
 			$('body').append('<div class="staging-empty">The staging area is currently empty.</div>');
 			addControls();
 		} else {
 			$('.staging-empty').remove();
-			$('body').append('<div class="gifcache-container"></div>');
-			for (i=0; i<data['urls'].length; i++) {
-				var html = createElement(data['urls'][i]);
-				$('.gifcache-container').append(html);
+			$('body').append('<div class="gifcache-container"><div class="grid"></div></div>');
+			for (i=0; i<data['stagedGifs'].length; i++) {
+				var properties = {
+					'url': data['stagedGifs'][i]['url'],
+					'label': data['stagedGifs'][i]['label'],
+					'tags': data['stagedGifs'][i]['tags']
+				}
+				var html = createElement(properties);
+				$('.grid').append(html);
 			}			
-			var submitBtn = '<div class="btn blue-btn submit-btn">Add to Cache!</div>';
+			var submitBtn = '<div class="btn green-btn submit-btn">Add to Cache!</div>';
 			$('body').append(submitBtn);
+			grid();
 			addControls();
 			animateContainers();
 			colorGifContainers();
@@ -134,12 +149,25 @@ function checkStorage() {
 	});
 }
 
+function grid() {
+	setTimeout(function() {
+		console.log('First timeout');
+		var grid = $('.grid').isotope({
+			itemSelector: '.staged-container',
+			masonry: {
+				columnWidth: 10,
+				isFitWidth: true
+			}
+		});
+	}, 100);
+}
+
 // Adds counter for number of staged GIFs
 function addControls() {
 	$('.controls').remove();
 	var numContainers = $('.staged-container').length;
 	if (numContainers) {
-		var html = '<div class="controls btn blue-btn">Bulk</div>';
+		var html = '<div class="controls btn grey-btn">Bulk</div>';
 		$('body').prepend(html);
 		chrome.browserAction.setBadgeText({text: numContainers.toString()});
 	} else {
@@ -163,8 +191,8 @@ function animateContainers() {
 }
 
 // Creates the individual HTML elements for staged GIFs
-function createElement(url) {
-	var results = formatUrl(url);
+function createElement(data) {
+	var results = formatUrl(data['url']);
 	var newUrl = results[0];
 	var type = results[1];
 	if (type === 'img') {
@@ -172,20 +200,21 @@ function createElement(url) {
 	} else if (type === 'video')  {
 		var element = '<video src="' + newUrl + '" autoplay loop poster="http://www.gifcache.com/static/img/preload.gif"></video>';
 	} else if (type === 'error') {
-		var element = '<div class="not-a-gif">Not a GIF file!</div>';
+		var element = '<div class="not-a-gif">Not a GIF!</div>';
 	}
 	var html = 	'<div class="staged-container staged-container-small animate">' +
-				'<i class="fa fa-times delete-image animate"></i>' + 
+				'<i class="fa fa-times delete-image animate"></i>' +
 				'<div class="img-wrapper">' + element + 
-				'</div><input class="label hidden" type="text" placeholder="Label">' +
-				'<input class="tags hidden" type="text" placeholder="Comma seperated tags">' +
-				'<input type="text" class="hidden-url hidden" value="' + url + '">' +
+				'</div><input class="label hidden" type="text" placeholder="Label" value="' + data['label'] + '">' +
+				'<input class="tags hidden" type="text" placeholder="Comma seperated tags" value="' + data['tags'] + '">' +
+				'<input type="text" class="hidden-url hidden" value="' + data['url'] + '">' +
 				'</div>';
 	return html
 }
 
 //  Picks random background color for staged GIF elements
 function colorGifContainers() {
+	console.log(COLORS);
 	var randomnumber = (Math.random() * (COLORS.length - 0 + 1) ) << 0;
 	var counter = randomnumber;
 	$('.staged-container').each(function() {
@@ -201,11 +230,11 @@ function removeElements() {
 	$('.delete-image').on('click', function() {
 		var url = $(this).parent().find('.hidden-url').val();
 		// Finding the index of the URL in Chrome local storage array
-		chrome.storage.local.get('urls', function(data) {
-			for (i=0; i<data['urls'].length; i++) {
-				if (data['urls'][i] === url) {					
+		chrome.storage.local.get('stagedGifs', function(data) {
+			for (i=0; i<data['stagedGifs'].length; i++) {
+				if (data['stagedGifs'][i]['url'] === url) {					
 					// Splicing index from array and re-setting the Chrome local storage array
-					data['urls'].splice(i, 1);
+					data['stagedGifs'].splice(i, 1);
 					chrome.storage.local.set(data, function() {
 						// Updating popup
 						checkStorage();
@@ -230,6 +259,36 @@ function editElements() {
 			$(this).children('.delete-image').toggleClass('delete-expanded');
 		}
 	});
+	$('.label, .tags').focusout(function() {
+		updateStagedObjects();
+	});
+}
+
+// Re-creates array of staged objects in Chrome local storage
+function updateStagedObjects() {
+	chrome.storage.local.remove('stagedGifs', function() {
+		chrome.storage.local.get(function(data) {
+			var objects = [];
+			$('.staged-container').each(function() {
+				var url = $(this).find('.hidden-url').val();
+				var label = $(this).find('.label').val();
+				var tags = $(this).find('.tags').val();
+				var gifObject = {
+					'url': url,
+					'label': label,
+					'tags': tags
+				}
+				objects.push(gifObject);
+			});
+			data['stagedGifs'] = objects;
+			chrome.storage.local.set(data, function() {
+				console.log('Gif objects updated in local storage!');
+				return false;
+			});
+		});
+		return false;
+	});
+	return false;
 }
 
 // Grabs inputs from each GIF, send to AJAX function
@@ -259,7 +318,7 @@ function submitAjax(values) {
 				'user_id': cookie['value']
 			},
 			success: function(json) {				
-				chrome.storage.local.remove('urls', function() {
+				chrome.storage.local.remove('stagedGifs', function() {
 					$('.loading-wrapper').remove();
 					var msg = 'Gifs succesfully added to your Cache!';
 					notification(msg);					
