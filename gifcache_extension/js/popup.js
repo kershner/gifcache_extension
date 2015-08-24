@@ -38,7 +38,7 @@ function showInitialScreen(loggedIn) {
 	$('body').css({'background-color': color});
 	if (loggedIn === null) {
 		$('.gifcache-container, .profile-info').remove();
-		var html = '<a id="login-btn" href="http://www.gifcache.com/login"><div class="btn red-btn">Please Log In</div></a>';
+		var html = '<a id="login-btn" href="http://www.gifcache.com/login"><div class="animate">Log In</div></a>';
 		$('body').append(html);		
 		$('#login-btn').on('click', function() {
 			chrome.tabs.create({url: $(this).attr('href')});

@@ -1,7 +1,7 @@
 body {
 	position: relative;
 	min-width: 15em;
-	min-height: 7em;
+	min-height: 9em;
 	max-height: 30em;
 	margin: 0;
 	padding-bottom: 1em;
@@ -148,13 +148,28 @@ input {
 	font-size: 3em;
 	color: #25B972;
 }
-#login-btn .btn {
+#login-btn div {
+	position: absolute;
 	margin: 0 auto;
+	margin-top: 1.5em;
 	padding: .25em;
-	top: 5em;
-	width: 10em;
+	left: 0;
+	right: 0;
+	width: 2.5em;
 	height: 1em;
-	line-height: 1em;
+	line-height: .8em;	
+	text-align: center;
+	font-size: 3em;
+	font-family: 'Lobster';
+	color: white;
+	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+#login-btn div:hover {
+	transform: scale(1.3);
+}
+#login-btn div:active {
+	top: 4px;
 }
 .profile-info {
 	position: absolute;
@@ -295,15 +310,16 @@ input {
 	padding: .25em;
 	padding-top: 5.25em;
 	margin: 0 auto;
-	min-width: 39em;
+	min-width: 26em;
 	text-align: center;
+	width: 100%;
 }
 .grid {
 	margin: 0 auto;
 }
 .staging-empty {
 	position: relative;
-	top: 4.4em;
+	top: 5.5em;
 	min-width: 20em;
 	text-align: center;
 	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
@@ -313,7 +329,7 @@ input {
 	position: relative;
 	opacity: 0.0;
 	margin: .25em;
-	padding: .5em .75em;
+	padding: .35em;
 	vertical-align: top;
 	max-width: 8em;
 	box-shadow: 0 1px 5px rgba(0, 0, 0, 0.46);
