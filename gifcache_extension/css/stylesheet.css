@@ -436,6 +436,7 @@ input {
 	padding: .35em;
 	vertical-align: top;
 	max-width: 8em;
+	min-width: 6em;
 	box-shadow: 0 1px 5px rgba(0, 0, 0, 0.46);
 	border-radius: .25em;
 }
