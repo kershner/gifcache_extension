@@ -197,16 +197,17 @@ input {
 	height: 2.75em;
 	width: 2.75em;
 	border-radius: 50%;
+	border: .2em solid white;
 	box-shadow: 0 1px 5px rgba(0, 0, 0, 0.46);
 }
 .username {		
 	display: none;
 	position: absolute;
 	opacity: 0.0;
-	padding: .2em;
+	padding: .2em .5em;
 	z-index: 4;
 	top: .75em;
-	left: 3.5em;
+	left: 3.75em;
 	background-color: rgba(0, 0, 0, 0.6);
 	color: white;
 	text-align: center;
@@ -299,8 +300,7 @@ input {
 .submit-btn {
 	position: relative;
 	margin: 0 auto;
-	margin-top: 2em;
-	margin-bottom: 1em;
+	margin: 2em auto;
 	padding: .25em;
 	left: 0;
 	right: 0;
@@ -310,9 +310,8 @@ input {
 	padding: .25em;
 	padding-top: 5.25em;
 	margin: 0 auto;
-	min-width: 26em;
+	min-width: 36em;
 	text-align: center;
-	width: 100%;
 }
 .grid {
 	margin: 0 auto;
