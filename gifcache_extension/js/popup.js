@@ -119,7 +119,7 @@ function addUsernameLink(username) {
 // Checks Chrome local storage, displays results or 'empty' message
 function checkStorage() {	
 	chrome.storage.local.get('stagedGifs', function(data) {
-		$('.submit-btn, .gifcache-container').remove();
+		$('.submit-btn, .gifcache-container, .controls, .control-bar').remove();
 		if (!data['stagedGifs'] || data['stagedGifs'].length < 1) {
 			$('body').append('<div class="staging-empty">The staging area is currently empty.</div>');
 			addControls();
@@ -144,14 +144,15 @@ function checkStorage() {
 			removeElements();
 			editElements();
 			submitElements();
+			bulkOperations();
+			visualIndicators();
 		}
 		return false;
 	});
 }
 
 function grid() {
-	setTimeout(function() {
-		console.log('First timeout');
+	setTimeout(function() {		
 		var grid = $('.grid').isotope({
 			itemSelector: '.staged-container',
 			masonry: {
@@ -167,7 +168,17 @@ function addControls() {
 	$('.controls').remove();
 	var numContainers = $('.staged-container').length;
 	if (numContainers) {
-		var html = '<div class="controls btn grey-btn">Bulk</div>';
+		var html = 	'<div class="controls btn grey-btn">Bulk</div>' + 
+					'<div class="control-bar hidden">' +
+					'<i class="fa fa-times close-controls"></i>' +
+					'<div class="select-options"><div class="select-all animate"><i class="fa fa-circle"></i>Select All</div>' + 
+					'<div class="select-none animate"><i class="fa fa-circle-o"></i>Select None</div></div>' +
+					'<div class="bulk-btns"><div class="bulk-add-btn bulk-btn btn green-btn">Add Tags</div>'  +
+					'<div class="bulk-remove-btn bulk-btn btn blue-btn">Remove Tags</div><div class="bulk-delete-btn bulk-btn btn red-btn">Delete GIFs</div></div>' +
+					'<div class="bulk-add-tags bulk-control hidden"><div class="bulk-control-title">Add Tags</div><input type="text" placeholder="Comma seperated tags"><div class="btn green-btn">Submit</div></div>' +
+					'<div class="bulk-remove-tags bulk-control hidden"><div class="bulk-control-title">Remove Tags</div><div class="btn blue-btn">Submit</div></div>' +
+					'<div class="bulk-delete bulk-control hidden"><div class="bulk-control-title">Delete GIFs</div><div class="btn red-btn">Submit</div></div>' +
+					'</div>';
 		$('body').prepend(html);
 		chrome.browserAction.setBadgeText({text: numContainers.toString()});
 	} else {
@@ -203,10 +214,13 @@ function createElement(data) {
 		var element = '<div class="not-a-gif">Not a GIF!</div>';
 	}
 	var html = 	'<div class="staged-container staged-container-small animate">' +
+				'<div class="bulk-wrapper hidden"><i class="fa fa-circle-o bulk-icon"></i></div>' +
 				'<i class="fa fa-times delete-image animate"></i>' +
 				'<div class="img-wrapper">' + element + 
 				'</div><input class="label hidden" type="text" placeholder="Label" value="' + data['label'] + '">' +
 				'<input class="tags hidden" type="text" placeholder="Comma seperated tags" value="' + data['tags'] + '">' +
+				'<div class="hidden-icon label-icon hidden"><i class="fa fa-ticket"></i></div>' +
+				'<div class="hidden-icon tags-icon hidden"><i class="fa fa-tags"></i></div>' +
 				'<input type="text" class="hidden-url hidden" value="' + data['url'] + '">' +
 				'</div>';
 	return html
@@ -214,7 +228,6 @@ function createElement(data) {
 
 //  Picks random background color for staged GIF elements
 function colorGifContainers() {
-	console.log(COLORS);
 	var randomnumber = (Math.random() * (COLORS.length - 0 + 1) ) << 0;
 	var counter = randomnumber;
 	$('.staged-container').each(function() {
@@ -250,7 +263,7 @@ function removeElements() {
 function editElements() {
 	$('.staged-container').on('click', function(e) {
 		var target = $(e.target);
-		if (target.is('.label, .tags, .hidden-url')) {
+		if (target.is('.label, .tags, .hidden-url, .bulk-wrapper')) {
 			// Nothing
 		} else {
 			$(this).toggleClass('staged-container-expanded');
@@ -261,6 +274,25 @@ function editElements() {
 	});
 	$('.label, .tags').focusout(function() {
 		updateStagedObjects();
+		visualIndicators();
+	});
+}
+
+// Adds small icon to staged-container if label/tags present
+function visualIndicators() {
+	$('.staged-container').each(function() {
+		var label = $(this).find('.label').val();
+		var tags = $(this).find('.tags').val();
+		if (label !== '') {
+			$(this).find('.label-icon').removeClass('hidden');
+		} else {
+			$(this).find('.label-icon').addClass('hidden');
+		}
+		if (tags !== '') {
+			$(this).find('.tags-icon').removeClass('hidden');
+		} else {
+			$(this).find('.tags-icon').addClass('hidden');
+		}
 	});
 }
 
@@ -304,6 +336,156 @@ function submitElements() {
 		});
 		submitAjax(finalValues);
 	});	
+}
+
+// Handles clicking on bulk operation buttons/displaying menus
+function bulkOperations() {
+	$('.controls').on('click', function() {
+		$(this).toggleClass('grey-btn-selected');
+		$('.control-bar').toggleClass('hidden');
+		$('.staged-container').each(function() {
+			$(this).find('.bulk-wrapper').toggleClass('hidden');
+		});
+	});
+	$('.close-controls').on('click', function() {
+		$('.controls').toggleClass('grey-btn-selected');
+		$('.control-bar').toggleClass('hidden');
+		$('.staged-container').each(function() {
+			$(this).find('.bulk-wrapper').toggleClass('hidden');
+		});
+	});
+	$('.bulk-wrapper').on('click', function() {
+		var isSelected = $(this).find('.bulk-icon').hasClass('fa-circle');
+		if (isSelected) {
+			$(this).find('.bulk-icon').removeClass('fa-circle');
+			$(this).find('.bulk-icon').addClass('fa-circle-o');
+		} else {
+			$(this).find('.bulk-icon').removeClass('fa-circle-o');
+			$(this).find('.bulk-icon').addClass('fa-circle');
+		}
+	});
+	$('.select-all').on('click', function() {
+		$('.staged-container').each(function() {
+			$(this).find('.bulk-icon').removeClass('fa-circle-o');
+			$(this).find('.bulk-icon').addClass('fa-circle');
+		});
+	});
+	$('.select-none').on('click', function() {
+		$('.staged-container').each(function() {
+			$(this).find('.bulk-icon').removeClass('fa-circle');
+			$(this).find('.bulk-icon').addClass('fa-circle-o');
+		});
+	});
+	$('.bulk-add-btn').on('click', function() {
+		$(this).toggleClass('green-btn-selected');
+		$('.bulk-add-tags').toggleClass('hidden');
+		$('.bulk-add-tags .btn').on('click', function() {
+			bulkAddTags();
+		});		
+	});
+	$('.bulk-remove-btn').on('click', function() {
+		$(this).toggleClass('blue-btn-selected');
+		$('.bulk-remove-tags').toggleClass('hidden');
+		$('.bulk-remove-tags .btn').on('click', function() {
+			bulkRemoveTags();
+		});
+	});
+	$('.bulk-delete-btn').on('click', function() {
+		$(this).toggleClass('red-btn-selected');
+		$('.bulk-delete').toggleClass('hidden');
+		$('.bulk-delete .btn').on('click', function() {
+			bulkDelete();
+		});
+	});
+}
+
+function bulkAddTags() {
+	var objects = [];
+	var tags = $('.bulk-add-tags input').val();
+	$('.staged-container').each(function() {
+		var selected = $(this).find('.bulk-icon').hasClass('fa-circle');
+		if (selected) {
+			var url = $(this).find('.hidden-url').val();
+			var label = $(this).find('.label').val();
+			var tags = $(this).find('.tags').val();
+			var properties = {
+				'url': url,
+				'label': label,
+				'tags': tags
+			}
+			objects.push(properties);
+		}
+	});
+	// Finding the index of the URL in Chrome local storage array
+	chrome.storage.local.get('stagedGifs', function(data) {
+		for (i=0; i<objects.length; i++) {			
+			for (j=0; j<data['stagedGifs'].length; j++) {
+				if (objects[i]['url'] === data['stagedGifs'][j]['url']) {
+					data['stagedGifs'][j]['tags'] = tags;
+				}
+			}
+		}
+		chrome.storage.local.set(data, function() {
+			// Updating popup
+			checkStorage();
+			return false;
+		});
+		return false;
+	});
+}
+
+function bulkRemoveTags() {
+	var urls = [];
+	$('.staged-container').each(function() {
+		var selected = $(this).find('.bulk-icon').hasClass('fa-circle');
+		if (selected) {
+			var url = $(this).find('.hidden-url').val();
+			urls.push(url);
+		}
+	});
+	// Finding the index of the URL in Chrome local storage array
+	chrome.storage.local.get('stagedGifs', function(data) {
+		for (i=0; i<urls.length; i++) {
+			for (j=0; j<data['stagedGifs'].length; j++) {
+				if (urls[i] === data['stagedGifs'][j]['url']) {
+					data['stagedGifs'][j]['tags'] = '';
+				}
+			}
+		}
+		chrome.storage.local.set(data, function() {
+			// Updating popup
+			checkStorage();
+			return false;
+		});
+		return false;
+	});
+}
+
+function bulkDelete() {
+	var urls = [];
+	$('.staged-container').each(function() {
+		var selected = $(this).find('.bulk-icon').hasClass('fa-circle');
+		if (selected) {
+			var url = $(this).find('.hidden-url').val();
+			urls.push(url);			
+		}
+	});
+	// Finding the index of the URL in Chrome local storage array
+	chrome.storage.local.get('stagedGifs', function(data) {
+		for (i=0; i<urls.length; i++) {
+			for (j=0; j<data['stagedGifs'].length; j++) {
+				if (urls[i] === data['stagedGifs'][j]['url']) {
+					data['stagedGifs'].splice(j, 1);
+				}
+			}
+		}
+		chrome.storage.local.set(data, function() {
+			// Updating popup
+			checkStorage();
+			return false;
+		});
+		return false;
+	});
 }
 
 // Handles the AJAX call to the Gifcache.com server
