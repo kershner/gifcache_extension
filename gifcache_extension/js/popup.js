@@ -204,6 +204,9 @@ function animateContainers() {
 function createElement(data) {
 	var results = formatUrl(data['url'], data['srcUrl']);
 	var newUrl = results[0];
+	if (newUrl.indexOf('gfycat') > -1) {
+		newUrl = data['srcUrl'];
+	}
 	var type = results[1];
 	if (type === 'img') {
 		var element = '<img src=' + newUrl + '>';
