@@ -204,6 +204,7 @@ function animateContainers() {
 function createElement(data) {
 	var results = formatUrl(data['url'], data['srcUrl']);
 	var newUrl = results[0];
+	console.log(newUrl);
 	if (newUrl.indexOf('gfycat') > -1) {
 		newUrl = data['srcUrl'];
 	}
@@ -307,8 +308,15 @@ function updateStagedObjects() {
 				var url = $(this).find('.hidden-url').val();
 				var label = $(this).find('.label').val();
 				var tags = $(this).find('.tags').val();
+				// If video element, update with the 'src' attribute instead of 'url' attribute
+				if ($(this).children('video')) {
+					srcUrl = $(this).find('video').attr('src');
+				} else {
+					srcUrl = url;
+				}
 				var gifObject = {
 					'url': url,
+					'srcUrl': srcUrl,
 					'label': label,
 					'tags': tags
 				}
