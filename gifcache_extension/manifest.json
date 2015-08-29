@@ -1,6 +1,7 @@
 {
 	"manifest_version": 2,
 	"name": "GifCache Chrome Extension",
+	"short_name": "GifCache",
 	"description": "Save GIFs to your Cache from anywhere on the internet",
 	"version": "1.0",
 	"browser_action": {

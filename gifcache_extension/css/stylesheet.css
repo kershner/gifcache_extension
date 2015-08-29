@@ -429,7 +429,7 @@ input {
 	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
 }
 .staged-container {
-	display: inline-block;	
+	display: inline-block;
 	position: relative;
 	opacity: 0.0;
 	margin: .25em;

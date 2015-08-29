@@ -5,18 +5,45 @@ chrome.contextMenus.create({
 	title: 'Add to GifCache Staging Area',
 	contexts: ['video', 'image'],
 	onclick: function(info) {
-		getImg(info.srcUrl);
+		// checkUrl(info.srcUrl);
+		var url = checkUrl(info.srcUrl);
+		getImg(url, info.srcUrl);
 	}
 });
 
-function getImg(url) {
+// Getting orignal URL from element's src attribute
+// Imgur/Gfycat etc obfuscate their webm/mp4 files behind gifv/gfycat formats
+function checkUrl(url) {
+	var lastPeriod = url.lastIndexOf('.');
+	var extension = url.slice(lastPeriod + 1, url.length);
+	formattedUrl = '';
+	if (extension === 'mp4' || extension === 'webm') {
+		// Imgur URL
+		if (url.indexOf('imgur') > -1) {
+			formattedUrl = url.substr(0, lastPeriod) + '.gifv';
+		// GfyCat URL
+		} else if (url.indexOf('gfycat') > -1) {
+			var lastForwardSlash = url.lastIndexOf('/');
+			var gfyname = url.slice(lastForwardSlash + 1, lastPeriod);
+			formattedUrl = 'gfycat.com/' + gfyname;
+		} else {
+			formattedUrl = url;
+		}
+	} else {
+		formattedUrl = url;
+	}
+	return formattedUrl
+}
+
+function getImg(url, srcUrl) {
 	chrome.storage.local.get(function(data) {
 		var gifObject = {
 			'url': url,
+			'srcUrl': srcUrl,
 			'label': '',
 			'tags': ''
 		}
-		if (typeof(data['stagedGifs']) !== 'undefined' && data['stagedGifs'] instanceof Array) {			
+		if (typeof(data['stagedGifs']) !== 'undefined' && data['stagedGifs'] instanceof Array) {
 			data['stagedGifs'].push(gifObject);
 		} else {
 			data['stagedGifs'] = [gifObject];
@@ -25,7 +52,7 @@ function getImg(url) {
 			console.log('Gif sent to staging area!');
 		});
 		if(data['stagedGifs']) {
-			var randomnumber = (Math.random() * (COLORS.length - 0 + 1) ) << 0;
+			var randomnumber = (Math.random() * (COLORS.length) ) << 0;
 			var total = data['stagedGifs'].length;
 			chrome.browserAction.setBadgeBackgroundColor({color: COLORS[randomnumber]});
 			chrome.browserAction.setBadgeText({text: total.toString()});

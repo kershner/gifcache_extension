@@ -1,23 +1,23 @@
-$(document).ready(function() {	
+$(document).ready(function() {
 	getCookie();
 });
 
 // Global colors to be used by various functions
 var COLORS = ['#25B972', '#498FBD', '#ff6767', '#FFA533', '#585ec7', '#FF8359'];
-function getColorScheme() {		
+function getColorScheme() {
 	var randomnumber = (Math.random() * (COLORS.length) ) << 0;
 	var mainColor = COLORS[randomnumber];
-	COLORS.splice(COLORS.indexOf(mainColor), 1);	
+	COLORS.splice(COLORS.indexOf(mainColor), 1);
 	return mainColor;
 }
 
 // Checks if user is logged in or not, grabs cookies set by GifCache server
-function getCookie() {	
-	chrome.cookies.get({url: 'http://www.gifcache.com', name: 'logged_in'}, function(cookie) {		
+function getCookie() {
+	chrome.cookies.get({url: 'http://www.gifcache.com', name: 'logged_in'}, function(cookie) {
 		showInitialScreen(cookie);
 		if (cookie === null) {
 			// Nothing
-		} else {			
+		} else {
 			chrome.cookies.get({url: 'http://www.gifcache.com', name: 'avatar'}, function(cookie) {
 				addAvatar(cookie);
 				return false;
@@ -39,7 +39,7 @@ function showInitialScreen(loggedIn) {
 	if (loggedIn === null) {
 		$('.gifcache-container, .profile-info').remove();
 		var html = '<a id="login-btn" href="http://www.gifcache.com/login"><div class="animate">Log In</div></a>';
-		$('body').append(html);		
+		$('body').append(html);
 		$('#login-btn').on('click', function() {
 			chrome.tabs.create({url: $(this).attr('href')});
 			return false;
@@ -48,7 +48,7 @@ function showInitialScreen(loggedIn) {
 		$('body').prepend('<a class="profile-info animate"></a>');
 		$('.nav-logo-not-logged-in').removeClass('nav-logo-not-logged-in').addClass('nav-logo');
 		checkStorage();
-	}	
+	}
 }
 
 // Colors small logo circle and fades in text
@@ -63,8 +63,8 @@ function navLogo() {
 	}, 50);
 }
 
-// Returns formatted URL for display and the HTML element required to play it
-function formatUrl(url) {
+// Returns formatted URL for display and the HTML element required to display it
+function formatUrl(url, srcUrl) {
 	var url = url.replace(/['"]+/g, '');
 	var lastPeriod = url.lastIndexOf('.');
 	var extension = url.slice(lastPeriod + 1, url.length);
@@ -80,9 +80,7 @@ function formatUrl(url) {
 		formattedUrl = url;
 		element = 'video';
 	} else if (url.indexOf('gfycat') > -1) {
-		var lastForwardSlash = url.lastIndexOf('/');
-		var gfyname = url.slice(lastForwardSlash + 1, url.length);
-		formattedUrl = 'http://giant.gfycat.com/' + gfyname + '.mp4';
+		formattedUrl = srcUrl;
 		element = 'video';
 	} else {
 		formattedUrl = 'error';
@@ -101,7 +99,7 @@ function addAvatar(avatar) {
 		var avatar = '<div class="avatar-wrapper"><video src="' + url + '" autoplay loop poster="http://www.gifcache.com/static/img/preload.gif"></video></div>';
 	} else if (type === 'error') {
 		var avatar = '<div class="avatar-wrapper"><img src="http://www.gifcache.com/static/img/default-user-image.png"></div>';
-	}	
+	}
 	$('.profile-info').prepend(avatar);
 }
 
@@ -117,7 +115,7 @@ function addUsernameLink(username) {
 }
 
 // Checks Chrome local storage, displays results or 'empty' message
-function checkStorage() {	
+function checkStorage() {
 	chrome.storage.local.get('stagedGifs', function(data) {
 		$('.submit-btn, .gifcache-container, .controls, .control-bar').remove();
 		if (!data['stagedGifs'] || data['stagedGifs'].length < 1) {
@@ -129,12 +127,13 @@ function checkStorage() {
 			for (i=0; i<data['stagedGifs'].length; i++) {
 				var properties = {
 					'url': data['stagedGifs'][i]['url'],
+					'srcUrl': data['stagedGifs'][i]['srcUrl'],
 					'label': data['stagedGifs'][i]['label'],
 					'tags': data['stagedGifs'][i]['tags']
 				}
 				var html = createElement(properties);
 				$('.grid').append(html);
-			}			
+			}
 			var submitBtn = '<div class="btn green-btn submit-btn">Add to Cache!</div>';
 			$('body').append(submitBtn);
 			grid();
@@ -152,7 +151,7 @@ function checkStorage() {
 }
 
 function grid() {
-	setTimeout(function() {		
+	setTimeout(function() {
 		var grid = $('.grid').isotope({
 			itemSelector: '.staged-container',
 			masonry: {
@@ -168,10 +167,10 @@ function addControls() {
 	$('.controls').remove();
 	var numContainers = $('.staged-container').length;
 	if (numContainers) {
-		var html = 	'<div class="controls btn grey-btn">Bulk</div>' + 
+		var html = 	'<div class="controls btn grey-btn">Bulk</div>' +
 					'<div class="control-bar hidden">' +
 					'<i class="fa fa-times close-controls"></i>' +
-					'<div class="select-options"><div class="select-all animate"><i class="fa fa-circle"></i>Select All</div>' + 
+					'<div class="select-options"><div class="select-all animate"><i class="fa fa-circle"></i>Select All</div>' +
 					'<div class="select-none animate"><i class="fa fa-circle-o"></i>Select None</div></div>' +
 					'<div class="bulk-btns"><div class="bulk-add-btn bulk-btn btn green-btn">Add Tags</div>'  +
 					'<div class="bulk-remove-btn bulk-btn btn blue-btn">Remove Tags</div><div class="bulk-delete-btn bulk-btn btn red-btn">Delete GIFs</div></div>' +
@@ -187,7 +186,7 @@ function addControls() {
 }
 
 // One-by-one fadeIn of .staged-container elements
-function animateContainers() {	
+function animateContainers() {
 	var containers = $('.gifcache-container').find('.staged-container');
 	var index = 0;
 	var length = containers.length;
@@ -203,7 +202,7 @@ function animateContainers() {
 
 // Creates the individual HTML elements for staged GIFs
 function createElement(data) {
-	var results = formatUrl(data['url']);
+	var results = formatUrl(data['url'], data['srcUrl']);
 	var newUrl = results[0];
 	var type = results[1];
 	if (type === 'img') {
@@ -216,7 +215,7 @@ function createElement(data) {
 	var html = 	'<div class="staged-container staged-container-small animate">' +
 				'<div class="bulk-wrapper hidden"><i class="fa fa-circle-o bulk-icon"></i></div>' +
 				'<i class="fa fa-times delete-image animate"></i>' +
-				'<div class="img-wrapper">' + element + 
+				'<div class="img-wrapper">' + element +
 				'</div><input class="label hidden" type="text" placeholder="Label" value="' + data['label'] + '">' +
 				'<input class="tags hidden" type="text" placeholder="Comma seperated tags" value="' + data['tags'] + '">' +
 				'<div class="hidden-icon label-icon hidden"><i class="fa fa-ticket"></i></div>' +
@@ -245,14 +244,14 @@ function removeElements() {
 		// Finding the index of the URL in Chrome local storage array
 		chrome.storage.local.get('stagedGifs', function(data) {
 			for (i=0; i<data['stagedGifs'].length; i++) {
-				if (data['stagedGifs'][i]['url'] === url) {					
+				if (data['stagedGifs'][i]['url'] === url) {
 					// Splicing index from array and re-setting the Chrome local storage array
 					data['stagedGifs'].splice(i, 1);
 					chrome.storage.local.set(data, function() {
 						// Updating popup
 						checkStorage();
 					});
-				}			
+				}
 			}
 			return false;
 		});
@@ -324,7 +323,7 @@ function updateStagedObjects() {
 }
 
 // Grabs inputs from each GIF, send to AJAX function
-function submitElements() {	
+function submitElements() {
 	$('.submit-btn').on('click', function() {
 		var finalValues = '';
 		$('.staged-container').each(function() {
@@ -335,7 +334,7 @@ function submitElements() {
 			finalValues += values + '|';
 		});
 		submitAjax(finalValues);
-	});	
+	});
 }
 
 // Handles clicking on bulk operation buttons/displaying menus
@@ -381,7 +380,7 @@ function bulkOperations() {
 		$('.bulk-add-tags').toggleClass('hidden');
 		$('.bulk-add-tags .btn').on('click', function() {
 			bulkAddTags();
-		});		
+		});
 	});
 	$('.bulk-remove-btn').on('click', function() {
 		$(this).toggleClass('blue-btn-selected');
@@ -418,7 +417,7 @@ function bulkAddTags() {
 	});
 	// Finding the index of the URL in Chrome local storage array
 	chrome.storage.local.get('stagedGifs', function(data) {
-		for (i=0; i<objects.length; i++) {			
+		for (i=0; i<objects.length; i++) {
 			for (j=0; j<data['stagedGifs'].length; j++) {
 				if (objects[i]['url'] === data['stagedGifs'][j]['url']) {
 					data['stagedGifs'][j]['tags'] = tags;
@@ -467,7 +466,7 @@ function bulkDelete() {
 		var selected = $(this).find('.bulk-icon').hasClass('fa-circle');
 		if (selected) {
 			var url = $(this).find('.hidden-url').val();
-			urls.push(url);			
+			urls.push(url);
 		}
 	});
 	// Finding the index of the URL in Chrome local storage array
@@ -490,7 +489,7 @@ function bulkDelete() {
 
 // Handles the AJAX call to the Gifcache.com server
 function submitAjax(values) {
-	chrome.cookies.get({url: 'http://www.gifcache.com', name: 'user_id'}, function(cookie) {		
+	chrome.cookies.get({url: 'http://www.gifcache.com', name: 'user_id'}, function(cookie) {
 		loadingScreen();
 		$.ajax({
 			url: 'http://www.gifcache.com/u/bulk-add-gifs/',
@@ -499,11 +498,11 @@ function submitAjax(values) {
 				'values': values,
 				'user_id': cookie['value']
 			},
-			success: function(json) {				
+			success: function(json) {
 				chrome.storage.local.remove('stagedGifs', function() {
 					$('.loading-wrapper').remove();
 					var msg = 'Gifs succesfully added to your Cache!';
-					notification(msg);					
+					notification(msg);
 				});
 			},
 			error: function(xhr, errmsg, err) {
@@ -512,7 +511,7 @@ function submitAjax(values) {
 				console.log(xhr.status + ': ' + xhr.responseText);
 			}
 		});
-	});		
+	});
 }
 
 // Loading animation
@@ -529,10 +528,10 @@ function notification(msg) {
 	var html = '<div class="notification-wrapper"><div class="notification">' + msg + '</div></div>';
 	$('body').append(html);
 	setTimeout(function() {
-		$('.notification-wrapper').fadeOut('slow', function() {			
+		$('.notification-wrapper').fadeOut('slow', function() {
 			$('.gifcache-container').empty();
 			checkStorage();
-			$('.notification-wrapper').remove();			
+			$('.notification-wrapper').remove();
 		})
 	}, 3000);
 }
