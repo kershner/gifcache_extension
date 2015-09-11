@@ -136,7 +136,6 @@ function checkStorage() {
 			}
 			var submitBtn = '<div class="btn green-btn submit-btn">Add to Cache!</div>';
 			$('body').append(submitBtn);
-			grid();
 			addControls();
 			animateContainers();
 			colorGifContainers();
@@ -145,6 +144,7 @@ function checkStorage() {
 			submitElements();
 			bulkOperations();
 			visualIndicators();
+			grid();
 		}
 		return false;
 	});
